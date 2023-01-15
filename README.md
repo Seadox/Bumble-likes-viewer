@@ -16,7 +16,7 @@ After setting up the profile on the site, I waited for likes. Right after I rece
 
 Next, I focused on understanding the configuration of the site and how the client receives the information. I used the “network” tab to see what information was being loaded. This is how I discovered that the server sends the information using “phtml” files.
 
-![example.jpeg](/images/network.JPG)
+![example.jpeg](/images/network.jpg)
 
 # The Data
 
@@ -25,7 +25,7 @@ After I copied the information that the client received from the server in a fil
 While analyzing the information, I found that the data is not encrypted, and each user has a key called **"has_user_voted"** which is a Boolean.
 This is how the data is presented:
 
-![example.jpeg](/images/data.JPG)
+![example.jpeg](/images/data.jpg)
 
 Now I had a pretty good idea of how the server was sending the data to the client and how the client knows if someone "like" me. I was able to use this information to create Python script using Selenium that allowed me to see who liked me before swiping.
 

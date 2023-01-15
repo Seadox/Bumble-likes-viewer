@@ -70,7 +70,6 @@ def getLikes(driver):
         for user in response['body'][0]['client_encounters']['results']:
             name = user['user']['name']
             age = user['user']['age']
-            # pic = user['user']['album']['photos'][0]['large_url'][2:]
 
             print("\t", name[::-1] if detect(name) == 'he' else name, "age:", age,
                   "is like you:", user['has_user_voted'])

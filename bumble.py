@@ -8,6 +8,7 @@ import os
 import pickle
 
 COOKIES_FILE = "cookies.pkl"
+CHROMEDRIVER_FILE = "chromedriver.exe"
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
         sleep(2)
         initial_page_source = driver.page_source
 
-        if os.path.exists('cookies.pkl'):
+        if os.path.exists(COOKIES_FILE):
             loadCookies(driver)
             driver.refresh()
         else:
@@ -69,7 +70,6 @@ def getLikes(driver):
         for user in response['body'][0]['client_encounters']['results']:
             name = user['user']['name']
             age = user['user']['age']
-            # pic = user['user']['album']['photos'][0]['large_url'][2:]
 
             print("\t", name[::-1] if detect(name) == 'he' else name, "age:", age,
                   "is like you:", user['has_user_voted'])
@@ -92,7 +92,7 @@ def loadCookies(driver):
 
 
 if __name__ == "__main__":
-    if os.path.exists("chromedriver.exe"):
+    if os.path.exists(CHROMEDRIVER_FILE):
         main()
     else:
         print("Please download the chromedriver from: https://chromedriver.chromium.org/downloads")

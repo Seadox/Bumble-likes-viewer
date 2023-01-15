@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -9,6 +11,8 @@ import pickle
 
 COOKIES_FILE = "cookies.pkl"
 CHROMEDRIVER_FILE = "chromedriver.exe"
+DATA_URL = "https://bumble.com/mwebapi.phtml?SERVER_GET_ENCOUNTERS"
+BUMBLE_URL = "https://bumble.com/app"
 
 
 def main():
@@ -56,7 +60,7 @@ def getLikes(driver):
         network_log = json.loads(log["message"])["message"]
         if("Network.response" in network_log["method"]):
             try:
-                if("https://bumble.com/mwebapi.phtml?SERVER_GET_ENCOUNTERS" in network_log["params"]["response"]["url"]):
+                if(DATA_URL in network_log["params"]["response"]["url"]):
                     response = driver.execute_cdp_cmd('Network.getResponseBody', {
                         'requestId': network_log["params"]["requestId"]})['body']
             except:
@@ -78,7 +82,7 @@ def getLikes(driver):
 
 
 def createCookies(driver):
-    while driver.current_url != "https://bumble.com/app":
+    while driver.current_url != BUMBLE_URL:
         None
 
     pickle.dump(driver.get_cookies(), open(COOKIES_FILE, "wb"))

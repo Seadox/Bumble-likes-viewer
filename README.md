@@ -14,4 +14,4 @@ I DO NOT take any responsibility for security issues or bans.
 
 ### Example of the data:
 
-![example.jpeg](example.JPG)
+![example.jpeg](/images/example.JPG)

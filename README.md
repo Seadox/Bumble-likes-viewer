@@ -1,3 +1,15 @@
+# How to use
+
+- [Download ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/downloads) and move it to the project folder
+- Install requirements:
+  ```
+  pip install -r requirements.txt
+  ```
+- Run:
+  ```
+  python bumble.py
+  ```
+
 # Introduction
 
 Bumble is a popular dating app that allows users to connect with potential matches. The app was launched in 2014 and is available for both iOS and Android devices. Unlike other dating apps, Bumble requires women to make the first move, giving them a greater sense of control over their dating experience. Bumble also offers a unique feature called Bumble BFF, which allows users to find friends rather than romantic partners. In addition, the app also includes Bumble Bizz, which is a networking and career-oriented feature. Bumble has become a popular choice for those looking to connect with new people, whether it be for dating, friendship, or professional networking.

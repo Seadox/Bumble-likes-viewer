@@ -47,7 +47,7 @@ def main():
 
             sleep(1)
     except Exception as e:
-        None
+        print(f"Script hit an error in the main file: {e}")
 
 
 def getLikes(driver):
@@ -62,7 +62,7 @@ def getLikes(driver):
                     response = driver.execute_cdp_cmd('Network.getResponseBody', {
                         'requestId': network_log["params"]["requestId"]})['body']
             except:
-                None
+                print(f"Script hit an error getting likes: {e}")
 
     try:
         response = json.loads(response)
@@ -77,7 +77,7 @@ def getLikes(driver):
             print("\t", name[::-1] if detect(name) == 'he' else name, "age:", age,
                   "is like you:", user['has_user_voted'], "photo:", photo)
     except:
-        None
+        print(f"Script hit an error displaying likes: {e}")
 
 
 def createCookies(driver):

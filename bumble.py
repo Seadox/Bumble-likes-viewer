@@ -102,4 +102,4 @@ if __name__ == "__main__":
     if os.path.exists(CHROMEDRIVER_FILE):
         main()
     else:
-        print("Please download the chromedriver from: https://chromedriver.chromium.org/downloads")
+        print("Please download the chromedriver from: https://googlechromelabs.github.io/chrome-for-testing/#stable")

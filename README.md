@@ -1,6 +1,6 @@
 # How to use
 
-- [Download ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/downloads) and move it to the project folder
+- [Download ChromeDriver](https://googlechromelabs.github.io/chrome-for-testing/#stable) and move it to the project folder
 - Install requirements:
   ```
   pip install -r requirements.txt

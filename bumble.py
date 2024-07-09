@@ -56,9 +56,9 @@ def getLikes(driver):
 
     for log in logs:
         network_log = json.loads(log["message"])["message"]
-        if("Network.response" in network_log["method"]):
+        if ("Network.response" in network_log["method"]):
             try:
-                if(DATA_URL in network_log["params"]["response"]["url"]):
+                if (DATA_URL in network_log["params"]["response"]["url"]):
                     response = driver.execute_cdp_cmd('Network.getResponseBody', {
                         'requestId': network_log["params"]["requestId"]})['body']
             except:
@@ -98,4 +98,4 @@ if __name__ == "__main__":
     if os.path.exists(CHROMEDRIVER_FILE):
         main()
     else:
-        print("Please download the chromedriver from: https://chromedriver.chromium.org/downloads")
+        print("Please download the chromedriver from: https://googlechromelabs.github.io/chrome-for-testing/#stable")

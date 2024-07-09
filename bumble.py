@@ -26,7 +26,11 @@ def main():
         driver = webdriver.Chrome(chrome_options=chrome_options,
                                   desired_capabilities=desired_capabilities)
 
+        driver.execute_cdp_cmd("Network.setBlockedURLs", {
+            "urls": ["*/[object%20Module]"]})
+        driver.execute_cdp_cmd("Network.enable", {})
         driver.get("https://bumble.com/app")
+
         sleep(2)
         initial_page_source = driver.page_source
 
@@ -56,9 +60,9 @@ def getLikes(driver):
 
     for log in logs:
         network_log = json.loads(log["message"])["message"]
-        if("Network.response" in network_log["method"]):
+        if ("Network.response" in network_log["method"]):
             try:
-                if(DATA_URL in network_log["params"]["response"]["url"]):
+                if (DATA_URL in network_log["params"]["response"]["url"]):
                     response = driver.execute_cdp_cmd('Network.getResponseBody', {
                         'requestId': network_log["params"]["requestId"]})['body']
             except:

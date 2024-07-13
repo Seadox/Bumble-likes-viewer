@@ -9,7 +9,6 @@ import pickle
 
 COOKIES_FILE = "cookies.pkl"
 CHROMEDRIVER_FILE = "chromedriver.exe"
-DATA_URL = "https://bumble.com/mwebapi.phtml?SERVER_GET_ENCOUNTERS"
 BUMBLE_URL = "https://bumble.com/app"
 
 
@@ -60,9 +59,12 @@ def getLikes(driver):
 
     for log in logs:
         network_log = json.loads(log["message"])["message"]
+        split = driver.page_source.split("/")
+        DATA_URL = f"https://{split[2]}/mwebapi.phtml?SERVER_GET_ENCOUNTERS"
+        DATA_URL2 = "https://bumble.com/mwebapi.phtml?SERVER_GET_ENCOUNTERS"
         if ("Network.response" in network_log["method"]):
             try:
-                if (DATA_URL in network_log["params"]["response"]["url"]):
+                if (DATA_URL in network_log["params"]["response"]["url"] or DATA_URL2 in network_log["params"]["response"]["url"]):
                     response = driver.execute_cdp_cmd('Network.getResponseBody', {
                         'requestId': network_log["params"]["requestId"]})['body']
             except:

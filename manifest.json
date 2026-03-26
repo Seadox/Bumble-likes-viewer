@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Bumble Insight",
+  "version": "1.0.0",
+  "description": "See profile details and vote status in a floating panel.",
+  "permissions": [],
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches":         ["*://*.bumble.com/*"],
+      "exclude_matches": ["*://www.bumble.com/*", "*://bumble.com/*"],
+      "js":              ["content.js"],
+      "css":             ["styles.css"],
+      "run_at":          "document_start",
+      "world":           "MAIN"
+    }
+  ]
+}

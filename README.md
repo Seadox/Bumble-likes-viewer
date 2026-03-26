@@ -1,54 +1,67 @@
-# How to use
+# Bumble Insight
 
-- [Download ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/downloads) and move it to the project folder
-- Install requirements:
-  ```
-  pip install -r requirements.txt
-  ```
-- Run:
-  ```
-  python bumble.py
-  ```
+A Chrome extension that adds a floating profile panel to Bumble's swipe page, surfacing information from the server that the app doesn't display in its UI.
 
-# Introduction
+---
 
-Bumble is a popular dating app that allows users to connect with potential matches. The app was launched in 2014 and is available for both iOS and Android devices. Unlike other dating apps, Bumble requires women to make the first move, giving them a greater sense of control over their dating experience. Bumble also offers a unique feature called Bumble BFF, which allows users to find friends rather than romantic partners. In addition, the app also includes Bumble Bizz, which is a networking and career-oriented feature. Bumble has become a popular choice for those looking to connect with new people, whether it be for dating, friendship, or professional networking.
-A few months ago, as I navigated the dating landscape, I found myself searching for a solution to a common conundrum: how to discover which of my potential matches had expressed interest in me. Like many dating apps on the market today, Bumble presented me with the option to purchase a subscription, which would then allow me access to the information of users who had liked my profile.
+## What It Shows
 
-# The Research
+For every profile in your current queue:
 
-My main goal while researching is to discover which of my potential matches has expressed interest in me without having to pay money. I wanted to understand how the client knows while I’m swipe through my options who liked me and how I can find out before if I have match or no.
+- **Name, age, and verification status**
+- **Voted status** — whether this person has already voted on your profile
+- **Their choice** — whether they liked you (shown only when the server confirms they voted)
+- **Lifestyle details** — looking for, height, drinking, smoking, kids, exercise, star sign, politics, education level
+- **About me** text and any open-ended question answers
+- **Photo count**
 
-# Bumble site
+The full queue is shown as a stack — not just the current card, but all upcoming profiles already loaded by the app. Profiles disappear from the queue the moment you swipe on them.
 
-When I set out to conduct my research on the Bumble app, I spent some time exploring Bumble's website, learning about the website features and how it operates.
-After setting up the profile on the site, I waited for likes. Right after I received a few individual likes, I went to the page that should show me who liked me, but unfortunately after a short check I found that the images I see are blurry.
+---
 
-# Browsers Developer Tools
+## Installation
 
-Next, I focused on understanding the configuration of the site and how the client receives the information. I used the “network” tab to see what information was being loaded. This is how I discovered that the server sends the information using “phtml” files.
+1. Download this repository as a ZIP and extract it, or clone it
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable **Developer mode** using the toggle in the top-right corner
+4. Click **Load unpacked** and select the extension folder
+5. Go to `bumble.com` and navigate to the swipe page
 
-![example.jpeg](/images/network.jpg)
+---
 
-# The Data
+## Usage
 
-Then, because there were a lot of "phtml" files being loaded, I decided to look for the largest file. When I found the file started diving into its information.
-After I copied the information that the client received from the server in a file ending with **"mwebapi.phtml?SERVER_GET_ENCOUNTERS"** to JSON Viewer to see the information more conveniently. I discovered that this is how the client loads all the information about the users that are displayed.
-While analyzing the information, I found that the data is not encrypted, and each user has a key called **"has_user_voted"** which is a Boolean.
-This is how the data is presented:
+| Action | How |
+|---|---|
+| Move the panel | Click and drag the header bar |
+| Collapse / expand | Click the `−` button in the header |
+| Toggle dark mode | Click the sun/moon icon in the header |
 
-![example.jpeg](/images/data.jpg)
+Dark mode preference is saved automatically and restored on the next visit.
 
-Now I had a pretty good idea of how the server was sending the data to the client and how the client knows if someone "like" me. I was able to use this information to create Python script using Selenium that allowed me to see who liked me before swiping.
+---
 
-# Conclusion
+## How It Works
 
-One of the key vulnerabilities I took advantage of in this project is the fact that the information that should provide whether the user has liked or not comes together with the rest of the information about the user. In addition, the server sends unencrypted information. This means you don't have to pay to see who liked you and you can see before if someone liked or not.
+Bumble's web app communicates with its backend through `XMLHttpRequest` to `/mwebapi.phtml`, using a custom RPC protocol (`badoo.bma.BadooMessage`). The extension wraps `XMLHttpRequest.prototype.open` and `.send` at the page level to read both outgoing votes and incoming profile data before the app processes them.
 
-# Disclaimer
+**Incoming data** (message type 84) contains a `results` array where each entry holds a `has_user_voted` flag — information the app's internal parser discards before it ever reaches the UI. The extension captures this directly from the raw response and uses it as the authoritative source for voted status.
 
-It is important to note that this is a proof of concept and **I DO NOT** take any responsibility for any damage caused using this script, or for security issues or bans.
+**Outgoing votes** (message type 80) are intercepted so the panel can immediately remove a profile from the queue the moment you swipe, keeping the stack in sync with your actions.
 
-## Authors
+---
 
-- [@Seadox](https://www.github.com/seadox)
+## Debug
+
+Open DevTools on `bumble.com` swipe page and run:
+
+```js
+// All loaded profiles in queue order
+window.__bumbleInsight.orderedProfiles()
+
+// Raw profile store (Map: userId → profile)
+window.__bumbleInsight.store
+
+// Queue order (array of userIds)
+window.__bumbleInsight.order
+```

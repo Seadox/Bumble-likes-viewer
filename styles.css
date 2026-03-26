@@ -1,0 +1,384 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+#bi-panel, #bi-panel * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Theme tokens ────────────────────────────────────────────────────────── */
+#bi-panel[data-theme="light"] {
+  --bg:           rgba(244, 245, 247, 0.96);
+  --bg-header:    rgba(255, 255, 255, 0.98);
+  --bg-card:      #ffffff;
+  --bg-card-act:  #ffffff;
+  --bg-body:      rgba(240, 241, 244, 0.96);
+  --border:       rgba(0, 0, 0, 0.07);
+  --border-act:   rgba(255, 101, 0, 0.35);
+  --shadow-card:  0 1px 4px rgba(0,0,0,0.06);
+  --shadow-act:   0 2px 14px rgba(255, 101, 0, 0.13);
+  --shadow-panel: 0 16px 48px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08);
+  --accent:       #ff6500;
+  --accent-soft:  rgba(255, 101, 0, 0.07);
+  --text:         #0f0f10;
+  --text-2:       #5a5a6a;
+  --text-3:       #a0a0b0;
+  --dot:          #22c55e;
+  --footer-bg:    rgba(248, 249, 250, 0.98);
+}
+
+#bi-panel[data-theme="dark"] {
+  --bg:           rgba(14, 14, 18, 0.97);
+  --bg-header:    rgba(20, 20, 26, 0.99);
+  --bg-card:      rgba(26, 26, 34, 0.97);
+  --bg-card-act:  rgba(30, 26, 22, 0.99);
+  --bg-body:      rgba(14, 14, 18, 0.97);
+  --border:       rgba(255,255,255,0.07);
+  --border-act:   rgba(255, 101, 0, 0.4);
+  --shadow-card:  0 1px 6px rgba(0,0,0,0.4);
+  --shadow-act:   0 2px 16px rgba(255, 101, 0, 0.18);
+  --shadow-panel: 0 20px 60px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.5);
+  --accent:       #ff7a20;
+  --accent-soft:  rgba(255, 122, 32, 0.1);
+  --text:         #f0f0f5;
+  --text-2:       #8888a0;
+  --text-3:       #50506a;
+  --dot:          #22c55e;
+  --footer-bg:    rgba(20, 20, 26, 0.99);
+}
+
+/* ── Panel shell ─────────────────────────────────────────────────────────── */
+#bi-panel {
+  /* Font size is driven by --bi-font-size set from JS.
+     All child sizes use em so they scale automatically. */
+  --bi-font-size: 12px;
+  font-size: var(--bi-font-size);
+
+  position: fixed;
+  top: 72px;
+  right: 18px;
+  width: 296px;
+  z-index: 2147483647;
+  font-family: 'Sora', system-ui, sans-serif;
+  color: var(--text);
+  border-radius: 18px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.bi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px 10px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.bi-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.bi-logo svg {
+  width: 1.35em;
+  height: 1.35em;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.bi-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.bi-btn-icon {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  padding: 0;
+}
+.bi-btn-icon:hover { background: var(--accent-soft); color: var(--accent); }
+.bi-btn-icon svg { width: 14px; height: 14px; }
+
+/* Font size buttons — text labels, not SVG */
+.bi-btn-font {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-family: inherit;
+}
+
+#bi-panel[data-theme="light"] .bi-icon-moon { display: none; }
+#bi-panel[data-theme="dark"]  .bi-icon-sun  { display: none; }
+
+/* Collapsed */
+#bi-panel.bi--collapsed .bi-body,
+#bi-panel.bi--collapsed .bi-footer { display: none; }
+
+/* ── Body ────────────────────────────────────────────────────────────────── */
+.bi-body {
+  padding: 8px 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: var(--bg-body);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.bi-body::-webkit-scrollbar { width: 3px; }
+.bi-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.bi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  overflow: hidden;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  box-shadow: var(--shadow-card);
+}
+
+.bi-card--active {
+  border-color: var(--border-act);
+  box-shadow: var(--shadow-act);
+  background: var(--bg-card-act);
+}
+
+.bi-card-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.1s;
+  border-radius: 13px;
+  min-height: 0;
+}
+.bi-card-header:hover { background: var(--accent-soft); }
+.bi-card--open .bi-card-header { border-radius: 13px 13px 0 0; }
+
+/* Avatar */
+.bi-avatar-wrap { position: relative; flex-shrink: 0; }
+
+.bi-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  display: block;
+}
+.bi-card--active .bi-avatar { border-color: var(--accent); }
+
+.bi-avatar--placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1.5px dashed var(--border-act);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Live dot */
+.bi-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dot);
+  border: 2px solid var(--bg-card);
+  animation: bi-pulse 2s ease-in-out infinite;
+}
+
+@keyframes bi-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2); }
+  50%       { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+/* Card info */
+.bi-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bi-card-name {
+  font-size: 1.04em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.bi-age { font-weight: 400; color: var(--text-2); }
+
+.bi-verified {
+  color: #22c55e;
+  font-size: 0.9em;
+  margin-left: 2px;
+  vertical-align: middle;
+  font-weight: 700;
+}
+
+.bi-badges {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Chevron */
+.bi-chevron {
+  width: 12px;
+  height: 12px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.bi-card--open .bi-chevron { transform: rotate(180deg); }
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.bi-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2em 0.6em;
+  border-radius: 20px;
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.bi-badge--yes   { background: #dcfce7; color: #15803d; }
+.bi-badge--no    { background: #f1f5f9; color: #64748b; }
+.bi-badge--super { background: #fff7ed; color: #c2410c; }
+.bi-badge--none  { background: transparent; color: var(--text-3); border: 1px solid var(--border); }
+
+.bi-badge--voted     { background: #dcfce7; color: #15803d; }
+.bi-badge--not-voted { background: transparent; color: var(--text-3); border: 1px solid var(--border); }
+
+/* Dark mode badge adjustments */
+#bi-panel[data-theme="dark"] .bi-badge--yes,
+#bi-panel[data-theme="dark"] .bi-badge--voted    { background: rgba(21,128,61,0.2);     color: #4ade80; }
+#bi-panel[data-theme="dark"] .bi-badge--no       { background: rgba(100,116,139,0.15);  color: #94a3b8; }
+#bi-panel[data-theme="dark"] .bi-badge--super    { background: rgba(194,65,12,0.2);     color: #fb923c; }
+#bi-panel[data-theme="dark"] .bi-badge--none,
+#bi-panel[data-theme="dark"] .bi-badge--not-voted { border-color: rgba(255,255,255,0.1); color: var(--text-3); }
+
+/* ── Card body ───────────────────────────────────────────────────────────── */
+.bi-card-body {
+  border-top: 1px solid var(--border);
+  animation: bi-expand 0.14s ease;
+}
+
+@keyframes bi-expand {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.bi-rows {
+  padding: 8px 12px 5px;
+  display: flex;
+  flex-direction: column;
+}
+
+.bi-row {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0.28em 0;
+  border-bottom: 1px solid var(--border);
+}
+.bi-row:last-child { border-bottom: none; }
+
+.bi-row-icon  { font-size: 0.85em; width: 1.1em; text-align: center; flex-shrink: 0; }
+.bi-row-label { font-size: 0.8em;  color: var(--text-3); width: 5.7em; flex-shrink: 0; }
+.bi-row-value { font-size: 0.88em; font-weight: 500; color: var(--text); flex: 1; }
+
+.bi-about {
+  padding: 0.6em 1em 0.85em;
+  font-size: 0.88em;
+  color: var(--text-2);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-top: 1px solid var(--border);
+  font-style: italic;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.bi-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 13px 8px;
+  background: var(--footer-bg);
+  border-top: 1px solid var(--border);
+  position: relative;
+}
+
+.bi-credit {
+  font-size: 0.75em;
+  color: var(--text-3);
+  opacity: 0.6;
+  letter-spacing: 0.03em;
+}
+
+.bi-credit::after {
+  content: "created by seadox";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75em;
+  color: var(--text-3);
+  opacity: 0.6;
+  letter-spacing: 0.03em;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.bi-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 16px;
+  color: var(--text-3);
+  font-size: 0.92em;
+}
+.bi-empty svg { width: 26px; height: 26px; opacity: 0.35; }

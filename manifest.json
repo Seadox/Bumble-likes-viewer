@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Bumble Insight",
+  "name": "BeeSpy",
   "version": "1.0.0",
-  "description": "See profile details and vote status in a floating panel.",
+  "description": "See what Bumble hides. Swipe smarter.",
   "permissions": [],
   "icons": {
     "16":  "icons/icon16.png",

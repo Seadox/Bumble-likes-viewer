@@ -1,5 +1,5 @@
 /**
- * Bumble Insight — content script
+ * BeeSpy — content script
  * Runs in MAIN world (see manifest.json)
  *
  * ── What this does ────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@
               <path d="M6 9.5l2 2 4-4" stroke="currentColor" stroke-width="1.4"
                     stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            Bumble Insight
+            BeeSpy
           </span>
           <div class="bi-header-actions">
             <button class="bi-btn-icon bi-btn-font" id="bi-font-dec"
@@ -437,8 +437,8 @@
   function _start() {
     if (document.body) {
       _observer.observe(document.body, { childList: true, subtree: true });
-      window.__bumbleInsight = { store, order, orderedProfiles };
-      console.debug('[BumbleInsight] Ready ✓');
+      window.__beeSpy = { store, order, orderedProfiles };
+      console.debug('[BeeSpy] Ready ✓');
     } else {
       document.addEventListener('DOMContentLoaded', _start, { once: true });
     }

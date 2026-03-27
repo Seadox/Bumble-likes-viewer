@@ -46,8 +46,10 @@
 
 /* ── Panel shell ─────────────────────────────────────────────────────────── */
 #bi-panel {
-  /* Font size is driven by --bi-font-size set from JS.
-     All child sizes use em so they scale automatically. */
+  /*
+   * --bi-font-size is set by JS (_applyFontSize).
+   * Every child uses em so the whole panel scales uniformly.
+   */
   --bi-font-size: 12px;
   font-size: var(--bi-font-size);
 
@@ -119,7 +121,7 @@
 .bi-btn-icon:hover { background: var(--accent-soft); color: var(--accent); }
 .bi-btn-icon svg { width: 14px; height: 14px; }
 
-/* Font size buttons — text labels, not SVG */
+/* Font buttons use fixed px so they stay legible regardless of zoom level */
 .bi-btn-font {
   font-size: 10px;
   font-weight: 700;
@@ -136,10 +138,11 @@
 
 /* ── Body ────────────────────────────────────────────────────────────────── */
 .bi-body {
-  padding: 8px 8px 4px;
+  padding: 0.65em 0.65em 0.3em;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  /* gap scales with font size — fixes spacing bug when A+/A− is pressed */
+  gap: 0.7em;
   max-height: calc(100vh - 140px);
   overflow-y: auto;
   background: var(--bg-body);
@@ -168,8 +171,8 @@
 .bi-card-header {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 10px;
+  gap: 0.75em;
+  padding: 0.65em 0.85em;
   cursor: pointer;
   outline: none;
   transition: background 0.1s;
@@ -179,7 +182,7 @@
 .bi-card-header:hover { background: var(--accent-soft); }
 .bi-card--open .bi-card-header { border-radius: 13px 13px 0 0; }
 
-/* Avatar */
+/* Avatar — fixed size, never scales with font */
 .bi-avatar-wrap { position: relative; flex-shrink: 0; }
 
 .bi-avatar {
@@ -206,7 +209,7 @@
   color: var(--accent);
 }
 
-/* Live dot */
+/* Live dot — fixed size */
 .bi-dot {
   position: absolute;
   bottom: 0;
@@ -230,7 +233,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 0.25em;
 }
 
 .bi-card-name {
@@ -249,7 +252,7 @@
 .bi-verified {
   color: #22c55e;
   font-size: 0.9em;
-  margin-left: 2px;
+  margin-left: 0.15em;
   vertical-align: middle;
   font-weight: 700;
 }
@@ -257,12 +260,12 @@
 .bi-badges {
   display: flex;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: 0.33em;
   align-items: center;
   overflow: hidden;
 }
 
-/* Chevron */
+/* Chevron — fixed size */
 .bi-chevron {
   width: 12px;
   height: 12px;
@@ -295,9 +298,9 @@
 
 /* Dark mode badge adjustments */
 #bi-panel[data-theme="dark"] .bi-badge--yes,
-#bi-panel[data-theme="dark"] .bi-badge--voted    { background: rgba(21,128,61,0.2);     color: #4ade80; }
-#bi-panel[data-theme="dark"] .bi-badge--no       { background: rgba(100,116,139,0.15);  color: #94a3b8; }
-#bi-panel[data-theme="dark"] .bi-badge--super    { background: rgba(194,65,12,0.2);     color: #fb923c; }
+#bi-panel[data-theme="dark"] .bi-badge--voted     { background: rgba(21,128,61,0.2);    color: #4ade80; }
+#bi-panel[data-theme="dark"] .bi-badge--no        { background: rgba(100,116,139,0.15); color: #94a3b8; }
+#bi-panel[data-theme="dark"] .bi-badge--super     { background: rgba(194,65,12,0.2);    color: #fb923c; }
 #bi-panel[data-theme="dark"] .bi-badge--none,
 #bi-panel[data-theme="dark"] .bi-badge--not-voted { border-color: rgba(255,255,255,0.1); color: var(--text-3); }
 
@@ -313,7 +316,7 @@
 }
 
 .bi-rows {
-  padding: 8px 12px 5px;
+  padding: 0.65em 1em 0.4em;
   display: flex;
   flex-direction: column;
 }
@@ -321,14 +324,14 @@
 .bi-row {
   display: flex;
   align-items: baseline;
-  gap: 7px;
+  gap: 0.58em;
   padding: 0.28em 0;
   border-bottom: 1px solid var(--border);
 }
 .bi-row:last-child { border-bottom: none; }
 
-.bi-row-icon  { font-size: 0.85em; width: 1.1em; text-align: center; flex-shrink: 0; }
-.bi-row-label { font-size: 0.8em;  color: var(--text-3); width: 5.7em; flex-shrink: 0; }
+.bi-row-icon  { font-size: 0.85em; width: 1.1em;  text-align: center; flex-shrink: 0; }
+.bi-row-label { font-size: 0.8em;  width: 5.7em;  color: var(--text-3); flex-shrink: 0; }
 .bi-row-value { font-size: 0.88em; font-weight: 500; color: var(--text); flex: 1; }
 
 .bi-about {
@@ -350,21 +353,9 @@
   padding: 6px 13px 8px;
   background: var(--footer-bg);
   border-top: 1px solid var(--border);
-  position: relative;
 }
 
 .bi-credit {
-  font-size: 0.75em;
-  color: var(--text-3);
-  opacity: 0.6;
-  letter-spacing: 0.03em;
-}
-
-.bi-credit::after {
-  content: "created by seadox";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
   font-size: 0.75em;
   color: var(--text-3);
   opacity: 0.6;

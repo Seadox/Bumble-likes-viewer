@@ -1,31 +1,56 @@
-# Bumble Insight
+<div align="center">
 
-A Chrome extension that adds a floating profile panel to Bumble's swipe page, surfacing information from the server that the app doesn't display in its UI.
+<img src="icons/icon128.png" width="72" alt="BeeSpy icon" />
+
+# BeeSpy
+
+**See what the app hides. Swipe smarter.**
+
+A lightweight Chrome extension that surfaces real-time profile data directly from Bumble's server — displayed in a clean floating panel while you swipe.
+
+<br/>
+
+![BeeSpy panel screenshot](docs/preview.png)
+
+<br/>
+
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-yellow?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![Made by Seadox](https://img.shields.io/badge/made%20by-Seadox-ff6500)](https://github.com/seadox)
+
+</div>
 
 ---
 
 ## What It Shows
 
-For every profile in your current queue:
+Every profile loaded into your swipe queue is displayed in a live stack — not just the current card, but all upcoming profiles the app has already fetched.
 
-- **Name, age, and verification status**
-- **Voted status** — whether this person has already voted on your profile
-- **Their choice** — whether they liked you (shown only when the server confirms they voted)
-- **Lifestyle details** — looking for, height, drinking, smoking, kids, exercise, star sign, politics, education level
-- **About me** text and any open-ended question answers
-- **Photo count**
+| Field | Description |
+|---|---|
+| **Name, age, verification** | Instantly visible on each card |
+| **Voted status** | Whether this person has already voted on your profile |
+| **Your vote** | Like / Pass / Super — shown the moment you swipe |
+| **Looking for** | Relationship, hookup, friends, etc. |
+| **Height, drinking, smoking, kids** | All lifestyle fields |
+| **Exercise, star sign, politics, education** | Additional lifestyle data |
+| **About me** | Their bio text |
+| **Open-ended answers** | Any question prompts they've answered |
+| **Photo count** | Number of photos on their profile |
 
-The full queue is shown as a stack — not just the current card, but all upcoming profiles already loaded by the app. Profiles disappear from the queue the moment you swipe on them.
+Profiles are removed from the stack the instant you swipe, keeping the queue perfectly in sync.
 
 ---
 
 ## Installation
 
-1. Download this repository as a ZIP and extract it, or clone it
+> Requires Google Chrome with Developer Mode enabled.
+
+1. [Download the latest release](../../releases) as a ZIP and extract it, or clone the repository
 2. Open Chrome and navigate to `chrome://extensions/`
 3. Enable **Developer mode** using the toggle in the top-right corner
-4. Click **Load unpacked** and select the extension folder
-5. Go to `bumble.com` and navigate to the swipe page
+4. Click **Load unpacked** and select the extracted folder
+5. Navigate to Bumble and go to the swipe page
 
 ---
 
@@ -33,35 +58,49 @@ The full queue is shown as a stack — not just the current card, but all upcomi
 
 | Action | How |
 |---|---|
-| Move the panel | Click and drag the header bar |
-| Collapse / expand | Click the `−` button in the header |
-| Toggle dark mode | Click the sun/moon icon in the header |
+| **Move the panel** | Click and drag the header bar |
+| **Collapse / expand** | Click the `−` / `+` button |
+| **Toggle dark mode** | Click the sun / moon icon |
+| **Adjust font size** | Click `A−` or `A+` in the header |
+| **Expand a profile** | Click any card to see full details |
 
-Dark mode preference is saved automatically and restored on the next visit.
+All preferences (theme, font size) are saved automatically and restored on your next visit.
 
 ---
 
 ## How It Works
 
-Bumble's web app communicates with its backend through `XMLHttpRequest` to `/mwebapi.phtml`, using a custom RPC protocol (`badoo.bma.BadooMessage`). The extension wraps `XMLHttpRequest.prototype.open` and `.send` at the page level to read both outgoing votes and incoming profile data before the app processes them.
+Bumble's web app communicates with its backend via `XMLHttpRequest` to `/mwebapi.phtml` using the `badoo.bma.BadooMessage` RPC protocol.
 
-**Incoming data** (message type 84) contains a `results` array where each entry holds a `has_user_voted` flag — information the app's internal parser discards before it ever reaches the UI. The extension captures this directly from the raw response and uses it as the authoritative source for voted status.
+The extension wraps `XMLHttpRequest.prototype.open` and `.send` at the page's JavaScript level to read both outgoing votes and incoming profile batches before the app processes them.
 
-**Outgoing votes** (message type 80) are intercepted so the panel can immediately remove a profile from the queue the moment you swipe, keeping the stack in sync with your actions.
+**Incoming data** (message type `84`) carries a `has_user_voted` flag per profile — a field the app's internal parser silently drops. BeeSpy captures it directly from the raw response.
+
+**Outgoing votes** (message type `80`) are intercepted the moment you swipe, so the matching profile is removed from the panel queue immediately — no waiting for the next server round-trip.
+
+The extension runs in `"world": "MAIN"` (Manifest V3) so its XHR prototype patches share the same JavaScript context as the Bumble app itself.
 
 ---
 
 ## Debug
 
-Open DevTools on `bumble.com` swipe page and run:
+Open DevTools on your Bumble run:
 
 ```js
-// All loaded profiles in queue order
-window.__bumbleInsight.orderedProfiles()
+// All profiles in queue order
+window.__beeSpy.orderedProfiles()
 
-// Raw profile store (Map: userId → profile)
-window.__bumbleInsight.store
+// Raw profile store (Map: userId → profile object)
+window.__beeSpy.store
 
-// Queue order (array of userIds)
-window.__bumbleInsight.order
+// Ordered userId array
+window.__beeSpy.order
 ```
+
+---
+
+<div align="center">
+
+Created by **Seadox**
+
+</div>

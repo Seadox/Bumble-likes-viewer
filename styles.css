@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+/* Google Fonts @import removed — blocked by Bumble's CSP (style-src).
+   Panel falls back to the system-ui stack defined on #bi-panel below. */
 
 /* ── Reset ───────────────────────────────────────────────────────────────── */
 #bi-panel, #bi-panel * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -58,7 +59,7 @@
   right: 18px;
   width: 296px;
   z-index: 2147483647;
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--text);
   border-radius: 18px;
   background: var(--bg);
@@ -96,6 +97,38 @@
   height: 1.35em;
   color: var(--accent);
   flex-shrink: 0;
+}
+
+.bi-ext-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  display: block;
+}
+
+/* Update badge — shown when a newer version is on GitHub */
+.bi-update-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  background: rgba(255, 101, 0, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(255, 101, 0, 0.4);
+  white-space: nowrap;
+  cursor: pointer;
+  animation: bi-badge-pulse 2s ease-in-out infinite;
+}
+.bi-update-badge:hover { background: rgba(255, 101, 0, 0.28); }
+.bi-update-badge[hidden] { display: none; }
+@keyframes bi-badge-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
 }
 
 .bi-header-actions {

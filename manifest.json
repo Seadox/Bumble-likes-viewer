@@ -1,9 +1,19 @@
 {
   "manifest_version": 3,
   "name": "BeeSpy",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "See what Bumble hides. Swipe smarter.",
   "permissions": [],
+  "host_permissions": [
+    "*://*.bumble.com/*",
+    "https://raw.githubusercontent.com/seadox/beespy/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*.png"],
+      "matches":   ["*://*.bumble.com/*"]
+    }
+  ],
   "icons": {
     "16":  "icons/icon16.png",
     "48":  "icons/icon48.png",
@@ -17,6 +27,12 @@
       "css":             ["styles.css"],
       "run_at":          "document_start",
       "world":           "MAIN"
+    },
+    {
+      "matches":         ["*://*.bumble.com/*"],
+      "exclude_matches": ["*://www.bumble.com/*", "*://bumble.com/*"],
+      "js":              ["version-check.js"],
+      "run_at":          "document_idle"
     }
   ]
 }

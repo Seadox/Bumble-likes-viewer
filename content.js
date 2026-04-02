@@ -107,7 +107,13 @@
     const myVote       = prev?.myVote || u.my_vote || 0;
 
     const f = {};
-    (u.profile_fields || []).forEach(pf => { f[pf.id] = pf.display_value || ''; });
+    const extras = [];
+    (u.profile_fields || []).forEach(pf => {
+      f[pf.id] = pf.display_value || '';
+      if (!KNOWN_FIELDS.has(pf.id) && pf.display_value) {
+        extras.push({ q: pf.name, a: pf.display_value });
+      }
+    });
 
     const profile = {
       userId:      u.user_id,
@@ -128,9 +134,7 @@
       starSign:    f['lifestyle_star_sign']         || '',
       politics:    f['lifestyle_politics']          || '',
       education:   f['lifestyle_education_level']   || '',
-      extras:      (u.profile_fields || [])
-                     .filter(pf => !KNOWN_FIELDS.has(pf.id) && pf.display_value)
-                     .map(pf => ({ q: pf.name, a: pf.display_value })),
+      extras,
     };
 
     store.set(u.user_id, profile);
@@ -149,7 +153,7 @@
   }
 
   function row(icon, label, value) {
-    if (!value) return '';
+    if (value === null || value === undefined || value === '') return '';
     return `<div class="bi-row">
       <span class="bi-row-icon">${icon}</span>
       <span class="bi-row-label">${label}</span>
@@ -248,20 +252,29 @@
   function getOrCreatePanel() {
     let panel = document.getElementById(PANEL_ID);
     if (!panel) {
+      const iconUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
+        ? chrome.runtime.getURL('icons/icon16.png')
+        : null;
+
       panel = document.createElement('div');
       panel.id = PANEL_ID;
       panel.setAttribute('data-theme', theme);
       panel.innerHTML = `
         <header class="bi-header">
           <span class="bi-logo">
-            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M6 9.5l2 2 4-4" stroke="currentColor" stroke-width="1.4"
-                    stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            ${iconUrl
+              ? `<img class="bi-ext-icon" src="${iconUrl}" width="18" height="18" alt="">`
+              : `<svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                   <circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.4"/>
+                   <path d="M6 9.5l2 2 4-4" stroke="currentColor" stroke-width="1.4"
+                         stroke-linecap="round" stroke-linejoin="round"/>
+                 </svg>`}
             BeeSpy
           </span>
           <div class="bi-header-actions">
+            <a class="bi-update-badge" id="bi-update-badge" hidden
+               href="https://github.com/seadox/beespy/releases" target="_blank"
+               rel="noopener" title="Update available" aria-label="Update available">↑ Update</a>
             <button class="bi-btn-icon bi-btn-font" id="bi-font-dec"
                     title="Decrease font size" aria-label="Decrease font size">A−</button>
             <button class="bi-btn-icon bi-btn-font" id="bi-font-inc"
@@ -310,23 +323,14 @@
         collapsed ? 'M5 10h10M10 5v10' : 'M5 10h10');
     });
 
-    // Font size — decrease
-    panel.querySelector('#bi-font-dec').addEventListener('click', e => {
-      e.stopPropagation();
-      if (fontSize <= FONT_MIN) return;
-      fontSize -= 1;
+    // Font size — shared helper used by both buttons
+    const adjustFont = delta => {
+      fontSize = Math.min(FONT_MAX, Math.max(FONT_MIN, fontSize + delta));
       _applyFontSize(panel);
       localStorage.setItem(STORAGE_FONT, fontSize);
-    });
-
-    // Font size — increase
-    panel.querySelector('#bi-font-inc').addEventListener('click', e => {
-      e.stopPropagation();
-      if (fontSize >= FONT_MAX) return;
-      fontSize += 1;
-      _applyFontSize(panel);
-      localStorage.setItem(STORAGE_FONT, fontSize);
-    });
+    };
+    panel.querySelector('#bi-font-dec').addEventListener('click', e => { e.stopPropagation(); adjustFont(-1); });
+    panel.querySelector('#bi-font-inc').addEventListener('click', e => { e.stopPropagation(); adjustFont(+1); });
 
     // Theme toggle
     panel.querySelector('#bi-theme-toggle').addEventListener('click', e => {
@@ -433,11 +437,44 @@
     }
   });
 
+  // ── Version check ─────────────────────────────────────────────────────────
+  // version-check.js runs in ISOLATED world (has chrome.runtime + bypasses CSP)
+  // and posts {type:'__beespy_version__', local, remote} when the fetch resolves.
+  window.addEventListener('message', e => {
+    if (e.source !== window || e.data?.type !== '__beespy_version__') return;
+    const { local, remote } = e.data;
+    console.log('[BeeSpy] version message received: local =', local, ', remote =', remote);
+    if (remote && _isNewerVersion(remote, local)) {
+      console.log('[BeeSpy] update available:', local, '→', remote);
+      const badge = document.getElementById('bi-update-badge');
+      if (badge) {
+        badge.hidden      = false;
+        badge.title       = `Update available: v${local} → v${remote}`;
+        badge.textContent = `↑ v${remote}`;
+        console.log('[BeeSpy] badge shown');
+      } else {
+        console.warn('[BeeSpy] #bi-update-badge not found in DOM');
+      }
+    } else if (remote) {
+      console.log('[BeeSpy] up to date');
+    }
+  });
+
+  function _isNewerVersion(remote, local) {
+    const parse = v => v.split('.').map(Number);
+    const [rMaj, rMin, rPat] = parse(remote);
+    const [lMaj, lMin, lPat] = parse(local);
+    if (rMaj !== lMaj) return rMaj > lMaj;
+    if (rMin !== lMin) return rMin > lMin;
+    return rPat > lPat;
+  }
+
   // ── Boot ──────────────────────────────────────────────────────────────────
   function _start() {
     if (document.body) {
       _observer.observe(document.body, { childList: true, subtree: true });
       window.__beeSpy = { store, order, orderedProfiles };
+      getOrCreatePanel();
       console.debug('[BeeSpy] Ready ✓');
     } else {
       document.addEventListener('DOMContentLoaded', _start, { once: true });

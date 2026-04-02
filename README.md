@@ -59,12 +59,15 @@ Profiles are removed from the stack the instant you swipe, keeping the queue per
 | Action | How |
 |---|---|
 | **Move the panel** | Click and drag the header bar |
+| **Resize the panel** | Drag the grip in the bottom-right corner |
 | **Collapse / expand** | Click the `−` / `+` button |
 | **Toggle dark mode** | Click the sun / moon icon |
 | **Adjust font size** | Click `A−` or `A+` in the header |
 | **Expand a profile** | Click any card to see full details |
 
-All preferences (theme, font size) are saved automatically and restored on your next visit.
+All preferences (theme, font size, panel position, panel size) are saved automatically and restored on your next visit.
+
+An **update badge** appears in the panel header when a newer version is available on GitHub. Click it to open the releases page.
 
 ---
 

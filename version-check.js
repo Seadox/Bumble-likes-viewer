@@ -6,8 +6,12 @@
  * the MAIN world via postMessage so content.js can show the update badge.
  */
 (function () {
-  const local = chrome.runtime.getManifest().version;
-  console.log('[BeeSpy] version-check: local =', local);
+  const _log  = (...a) => console.log('[BeeSpy]', ...a);
+  const _warn = (...a) => console.warn('[BeeSpy]', ...a);
+
+  const local   = chrome.runtime.getManifest().version;
+  const iconUrl = chrome.runtime.getURL('icons/icon16.png');
+  _log('version-check: local =', local);
 
   fetch('https://raw.githubusercontent.com/seadox/beespy/main/manifest.json', { cache: 'no-store' })
     .then(r => {
@@ -16,10 +20,10 @@
     })
     .then(data => {
       const remote = data?.version;
-      console.log('[BeeSpy] version-check: remote =', remote);
-      window.postMessage({ type: '__beespy_version__', local, remote }, '*');
+      _log('version-check: remote =', remote);
+      window.postMessage({ type: '__beespy_version__', local, remote, iconUrl }, '*');
     })
     .catch(err => {
-      console.warn('[BeeSpy] version-check: fetch failed —', err.message);
+      _warn('version-check: fetch failed —', err.message);
     });
 })();

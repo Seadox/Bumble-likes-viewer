@@ -3,21 +3,18 @@
  * Runs in MAIN world (see manifest.json)
  *
  * ── What this does ────────────────────────────────────────────────────────
- *  1. Wraps XMLHttpRequest (the actual Bumble RPC transport) to intercept
- *     both incoming encounters data and outgoing votes.
- *  2. Renders a floating panel showing the full profile queue with all
- *     available lifestyle data. has_user_voted is shown for each profile.
- *  3. Persists dark/light mode and font-size preference in localStorage.
+ *  1. Wraps XMLHttpRequest to intercept incoming encounters data and outgoing votes.
+ *  2. Renders a floating panel showing the full profile queue.
+ *  3. Persists theme, font-size, panel position and size in localStorage.
  *
  * ── Transport layer ───────────────────────────────────────────────────────
- *  All mwebapi.phtml traffic uses XHR (vendor module 7053797886), NOT fetch.
- *  Outgoing body format (message_type 80 = vote):
+ *  All mwebapi.phtml traffic uses XHR, NOT fetch.
+ *  Outgoing vote body format (message_type 80):
  *    { "$gpb": "badoo.bma.BadooMessage", "body": [{
  *        "message_type": 80,
  *        "server_encounters_vote": { "person_id", "vote", "vote_source", "game_mode" }
  *    }]}
  *  vote values: 2 = YES · 3 = NO · 7 = SUPERSWIPE
- *
  */
 
 (function () {
@@ -27,17 +24,29 @@
   if (!/^[^.]+\.bumble\.com$/.test(window.location.hostname)) return;
 
   // ── Config ────────────────────────────────────────────────────────────────
-  const PANEL_ID       = 'bi-panel';
-  const STORAGE_THEME  = 'bi-theme';    // 'light' | 'dark'
-  const STORAGE_FONT   = 'bi-fontsize'; // number, default 12
+  const PANEL_ID         = 'bi-panel';
+  const STORAGE_THEME    = 'bi-theme';
+  const STORAGE_FONT     = 'bi-fontsize';
+  const STORAGE_WIDTH    = 'bi-width';
+  const STORAGE_HEIGHT   = 'bi-height';
+  const STORAGE_POS_LEFT = 'bi-pos-left';
+  const STORAGE_POS_TOP  = 'bi-pos-top';
 
-  const FONT_MIN = 9;
-  const FONT_MAX = 18;
+  const FONT_MIN     = 9;
+  const FONT_MAX     = 18;
   const FONT_DEFAULT = 12;
 
+  const PANEL_MIN_WIDTH  = 220;
+  const PANEL_MAX_WIDTH  = 560;
+  const PANEL_MIN_HEIGHT = 160;
+
+  // ── Logging helpers ───────────────────────────────────────────────────────
+  const _log  = (...a) => console.log('[BeeSpy]', ...a);
+  const _warn = (...a) => console.warn('[BeeSpy]', ...a);
+
   // ── State ─────────────────────────────────────────────────────────────────
-  const store = new Map();   // userId → profile object
-  const order = [];          // userId[] preserving server queue order
+  const store = new Map();
+  const order = [];
   let theme    = localStorage.getItem(STORAGE_THEME) || 'light';
   let fontSize = Math.min(FONT_MAX, Math.max(FONT_MIN,
                    Number(localStorage.getItem(STORAGE_FONT)) || FONT_DEFAULT));
@@ -71,9 +80,7 @@
       const v = req.body[0]?.server_encounters_vote;
       if (!v?.person_id) return;
       const p = store.get(v.person_id);
-      // Track myVote only — hasUserVoted is server-driven, not set from outgoing vote
-      if (p) { p.myVote = v.vote; }
-      // Remove from visible queue immediately after any vote (like / pass / super)
+      if (p) p.myVote = v.vote;
       const idx = order.indexOf(v.person_id);
       if (idx !== -1) order.splice(idx, 1);
       renderPanel();
@@ -83,7 +90,6 @@
   function _interceptIncoming(res) {
     const results = res?.body?.[0]?.client_encounters?.results;
     if (!Array.isArray(results)) return;
-    // Clear queue on every fresh server response, then repopulate
     store.clear();
     order.length = 0;
     results.forEach(_parseResult);
@@ -115,13 +121,12 @@
       }
     });
 
-    const profile = {
+    store.set(u.user_id, {
       userId:      u.user_id,
       name:        u.name || '?',
       age:         u.age  || '',
       verified:    u.verification_status === 1,
-      hasUserVoted,
-      myVote,
+      hasUserVoted, myVote,
       photoCount:  (u.albums || []).reduce((s, a) => s + (a.count_of_photos || 0), 0),
       firstPhoto:  u.albums?.[0]?.photos?.[0]?.preview_url || null,
       about:       f['aboutme_text']                || '',
@@ -135,9 +140,8 @@
       politics:    f['lifestyle_politics']          || '',
       education:   f['lifestyle_education_level']   || '',
       extras,
-    };
+    });
 
-    store.set(u.user_id, profile);
     if (!order.includes(u.user_id)) order.push(u.user_id);
   }
 
@@ -168,65 +172,63 @@
     return              ['bi-badge--none',  '· pending'];
   }
 
-  // ── Card builder ──────────────────────────────────────────────────────────
-  function buildCard(p, i) {
-    const isFirst = i === 0;
-    const imgUrl  = p.firstPhoto
-      ? 'https:' + p.firstPhoto.replace('__size__', '120x120')
-      : null;
+  // ── Card builders ─────────────────────────────────────────────────────────
+  function _buildCardHeader(p, i) {
+    const imgUrl      = p.firstPhoto ? 'https:' + p.firstPhoto.replace('__size__', '120x120') : null;
+    const [mvCls, mvTxt]  = myVoteBadge(p.myVote);
+    const hasVotedCls = p.hasUserVoted ? 'bi-badge--voted'   : 'bi-badge--not-voted';
+    const hasVotedTxt = p.hasUserVoted ? '✓ Voted'           : '○ Not voted';
 
-    const [mvCls, mvTxt] = myVoteBadge(p.myVote);
-    const hasVotedCls    = p.hasUserVoted ? 'bi-badge--voted'     : 'bi-badge--not-voted';
-    const hasVotedTxt    = p.hasUserVoted ? '✓ Voted'             : '○ Not voted';
-    const hasVotedBadge  = `<span class="bi-badge ${hasVotedCls}">${hasVotedTxt}</span>`;
-
-    return `<div class="bi-card ${isFirst ? 'bi-card--active' : ''}" data-uid="${esc(p.userId)}">
-
-      <div class="bi-card-header" role="button" tabindex="0" aria-expanded="false">
-        <div class="bi-avatar-wrap">
-          ${imgUrl
-            ? `<img class="bi-avatar" src="${imgUrl}" alt="${esc(p.name)}" loading="lazy">`
-            : `<div class="bi-avatar bi-avatar--placeholder">${i + 1}</div>`}
-          ${isFirst ? '<span class="bi-dot"></span>' : ''}
-        </div>
-
-        <div class="bi-card-info">
-          <div class="bi-card-name">
-            ${esc(p.name)}<span class="bi-age">, ${p.age}</span>
-            ${p.verified ? '<span class="bi-verified">✓</span>' : ''}
-          </div>
-          <div class="bi-badges">
-            <span class="bi-badge ${mvCls}">${mvTxt}</span>
-            ${hasVotedBadge}
-          </div>
-        </div>
-
-        <svg class="bi-chevron" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+    return `<div class="bi-card-header" role="button" tabindex="0" aria-expanded="false">
+      <div class="bi-avatar-wrap">
+        ${imgUrl
+          ? `<img class="bi-avatar" src="${imgUrl}" alt="${esc(p.name)}" loading="lazy">`
+          : `<div class="bi-avatar bi-avatar--placeholder">${i + 1}</div>`}
+        ${i === 0 ? '<span class="bi-dot"></span>' : ''}
       </div>
-
-      <div class="bi-card-body" hidden>
-        <div class="bi-rows">
-          ${row('📸', 'Photos',      p.photoCount)}
-          ${row('🎯', 'Looking for', p.lookingFor)}
-          ${row('📏', 'Height',      p.height)}
-          ${row('🍷', 'Drinking',    p.drinking)}
-          ${row('🚬', 'Smoking',     p.smoking)}
-          ${row('👶', 'Kids',        p.kids)}
-          ${row('🏃', 'Exercise',    p.exercise)}
-          ${row('⭐', 'Star sign',   p.starSign)}
-          ${row('🗳️', 'Politics',   p.politics)}
-          ${row('🎓', 'Education',   p.education)}
-          ${p.extras.map(e => row('💬', e.q, e.a)).join('')}
+      <div class="bi-card-info">
+        <div class="bi-card-name">
+          ${esc(p.name)}<span class="bi-age">, ${p.age}</span>
+          ${p.verified ? '<span class="bi-verified">✓</span>' : ''}
         </div>
-        ${p.about ? `<p class="bi-about">${esc(p.about)}</p>` : ''}
+        <div class="bi-badges">
+          <span class="bi-badge ${mvCls}">${mvTxt}</span>
+          <span class="bi-badge ${hasVotedCls}">${hasVotedTxt}</span>
+        </div>
       </div>
-
+      <svg class="bi-chevron" viewBox="0 0 10 6" fill="none">
+        <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>`;
   }
 
-  // ── Panel HTML ────────────────────────────────────────────────────────────
+  function _buildCardBody(p) {
+    return `<div class="bi-card-body" hidden>
+      <div class="bi-rows">
+        ${row('📸', 'Photos',      p.photoCount)}
+        ${row('🎯', 'Looking for', p.lookingFor)}
+        ${row('📏', 'Height',      p.height)}
+        ${row('🍷', 'Drinking',    p.drinking)}
+        ${row('🚬', 'Smoking',     p.smoking)}
+        ${row('👶', 'Kids',        p.kids)}
+        ${row('🏃', 'Exercise',    p.exercise)}
+        ${row('⭐', 'Star sign',   p.starSign)}
+        ${row('🗳️', 'Politics',   p.politics)}
+        ${row('🎓', 'Education',   p.education)}
+        ${p.extras.map(e => row('💬', e.q, e.a)).join('')}
+      </div>
+      ${p.about ? `<p class="bi-about">${esc(p.about)}</p>` : ''}
+    </div>`;
+  }
+
+  function buildCard(p, i) {
+    return `<div class="bi-card ${i === 0 ? 'bi-card--active' : ''}" data-uid="${esc(p.userId)}">
+      ${_buildCardHeader(p, i)}
+      ${_buildCardBody(p)}
+    </div>`;
+  }
+
   function buildPanelHTML(profiles) {
     if (!profiles.length) {
       return `<div class="bi-empty">
@@ -241,9 +243,68 @@
     return profiles.map(buildCard).join('');
   }
 
-  // ── Font size helper ──────────────────────────────────────────────────────
-  // Sets font-size as a CSS custom property on the panel so all em-based
-  // children scale with it automatically.
+  // ── Card open / close helpers ─────────────────────────────────────────────
+  function _openCard(card) {
+    card.classList.add('bi-card--open');
+    card.querySelector('.bi-card-body').hidden = false;
+    card.querySelector('.bi-card-header').setAttribute('aria-expanded', 'true');
+  }
+
+  function _closeCard(card) {
+    card.classList.remove('bi-card--open');
+    card.querySelector('.bi-card-body').hidden = true;
+    card.querySelector('.bi-card-header').setAttribute('aria-expanded', 'false');
+  }
+
+  // ── Panel template ────────────────────────────────────────────────────────
+  function _panelTemplate() {
+    return `
+      <header class="bi-header">
+        <span class="bi-logo">
+          <svg id="bi-logo-icon" class="bi-logo-svg" viewBox="0 0 18 18" fill="none"
+               xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M6 9.5l2 2 4-4" stroke="currentColor" stroke-width="1.4"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          BeeSpy
+        </span>
+        <div class="bi-header-actions">
+          <a class="bi-update-badge" id="bi-update-badge" hidden
+             href="https://github.com/seadox/beespy/releases" target="_blank"
+             rel="noopener" title="Update available" aria-label="Update available">↑ Update</a>
+          <button class="bi-btn-icon bi-btn-font" id="bi-font-dec"
+                  title="Decrease font size" aria-label="Decrease font size">A−</button>
+          <button class="bi-btn-icon bi-btn-font" id="bi-font-inc"
+                  title="Increase font size" aria-label="Increase font size">A+</button>
+          <button class="bi-btn-icon" id="bi-theme-toggle"
+                  title="Toggle dark mode" aria-label="Toggle theme">
+            <svg class="bi-icon-sun" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"
+                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <svg class="bi-icon-moon" viewBox="0 0 20 20" fill="none">
+              <path d="M17.39 11.73A7 7 0 0 1 8.27 2.61 7.002 7.002 0 1 0 17.39 11.73z"
+                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="bi-btn-icon" id="bi-collapse"
+                  title="Collapse" aria-label="Collapse panel">
+            <svg viewBox="0 0 20 20" fill="none">
+              <path d="M5 10h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+      <div class="bi-body" id="bi-body"></div>
+      <footer class="bi-footer" id="bi-footer">
+        <span class="bi-credit">Created by Seadox</span>
+      </footer>
+      <div class="bi-resize-grip" aria-hidden="true"></div>`;
+  }
+
+  // ── Font size ─────────────────────────────────────────────────────────────
   function _applyFontSize(panel) {
     panel.style.setProperty('--bi-font-size', fontSize + 'px');
   }
@@ -252,68 +313,24 @@
   function getOrCreatePanel() {
     let panel = document.getElementById(PANEL_ID);
     if (!panel) {
-      const iconUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
-        ? chrome.runtime.getURL('icons/icon16.png')
-        : null;
-
       panel = document.createElement('div');
       panel.id = PANEL_ID;
       panel.setAttribute('data-theme', theme);
-      panel.innerHTML = `
-        <header class="bi-header">
-          <span class="bi-logo">
-            ${iconUrl
-              ? `<img class="bi-ext-icon" src="${iconUrl}" width="18" height="18" alt="">`
-              : `<svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                   <circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.4"/>
-                   <path d="M6 9.5l2 2 4-4" stroke="currentColor" stroke-width="1.4"
-                         stroke-linecap="round" stroke-linejoin="round"/>
-                 </svg>`}
-            BeeSpy
-          </span>
-          <div class="bi-header-actions">
-            <a class="bi-update-badge" id="bi-update-badge" hidden
-               href="https://github.com/seadox/beespy/releases" target="_blank"
-               rel="noopener" title="Update available" aria-label="Update available">↑ Update</a>
-            <button class="bi-btn-icon bi-btn-font" id="bi-font-dec"
-                    title="Decrease font size" aria-label="Decrease font size">A−</button>
-            <button class="bi-btn-icon bi-btn-font" id="bi-font-inc"
-                    title="Increase font size" aria-label="Increase font size">A+</button>
-            <button class="bi-btn-icon" id="bi-theme-toggle"
-                    title="Toggle dark mode" aria-label="Toggle theme">
-              <svg class="bi-icon-sun" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/>
-                <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"
-                      stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-              <svg class="bi-icon-moon" viewBox="0 0 20 20" fill="none">
-                <path d="M17.39 11.73A7 7 0 0 1 8.27 2.61 7.002 7.002 0 1 0 17.39 11.73z"
-                      stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
-            <button class="bi-btn-icon" id="bi-collapse"
-                    title="Collapse" aria-label="Collapse panel">
-              <svg viewBox="0 0 20 20" fill="none">
-                <path d="M5 10h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-        </header>
-        <div class="bi-body" id="bi-body"></div>
-        <footer class="bi-footer" id="bi-footer">
-          <span class="bi-credit">Created by Seadox</span>
-        </footer>`;
-
+      panel.innerHTML = _panelTemplate();
       document.body.appendChild(panel);
       _applyFontSize(panel);
+      _restoreSize(panel);
+      _restorePosition(panel);
+      _syncBodyHeight(panel);
       _attachPanelEvents(panel);
       _makeDraggable(panel, panel.querySelector('.bi-header'));
+      _makeResizable(panel, panel.querySelector('.bi-resize-grip'));
     }
     return panel;
   }
 
+  // ── Panel events ──────────────────────────────────────────────────────────
   function _attachPanelEvents(panel) {
-    // Collapse / expand
     panel.querySelector('#bi-collapse').addEventListener('click', e => {
       e.stopPropagation();
       const collapsed = panel.classList.toggle('bi--collapsed');
@@ -323,7 +340,6 @@
         collapsed ? 'M5 10h10M10 5v10' : 'M5 10h10');
     });
 
-    // Font size — shared helper used by both buttons
     const adjustFont = delta => {
       fontSize = Math.min(FONT_MAX, Math.max(FONT_MIN, fontSize + delta));
       _applyFontSize(panel);
@@ -332,7 +348,6 @@
     panel.querySelector('#bi-font-dec').addEventListener('click', e => { e.stopPropagation(); adjustFont(-1); });
     panel.querySelector('#bi-font-inc').addEventListener('click', e => { e.stopPropagation(); adjustFont(+1); });
 
-    // Theme toggle
     panel.querySelector('#bi-theme-toggle').addEventListener('click', e => {
       e.stopPropagation();
       theme = theme === 'light' ? 'dark' : 'light';
@@ -340,29 +355,21 @@
       localStorage.setItem(STORAGE_THEME, theme);
     });
 
-    // Card expand/collapse — only one open at a time, event delegation
+    _attachCardEvents(panel);
+  }
+
+  function _attachCardEvents(panel) {
     panel.querySelector('#bi-body').addEventListener('click', e => {
       const header = e.target.closest('.bi-card-header');
       if (!header) return;
       const card   = header.closest('.bi-card');
-      const body   = card.querySelector('.bi-card-body');
-      const isOpen = !body.hidden;
-
-      // Close all other open cards
+      const isOpen = card.classList.contains('bi-card--open');
       panel.querySelectorAll('.bi-card--open').forEach(other => {
-        if (other === card) return;
-        other.classList.remove('bi-card--open');
-        other.querySelector('.bi-card-body').hidden = true;
-        other.querySelector('.bi-card-header').setAttribute('aria-expanded', 'false');
+        if (other !== card) _closeCard(other);
       });
-
-      // Toggle clicked card
-      body.hidden = isOpen;
-      header.setAttribute('aria-expanded', String(!isOpen));
-      card.classList.toggle('bi-card--open', !isOpen);
+      isOpen ? _closeCard(card) : _openCard(card);
     });
 
-    // Keyboard support
     panel.querySelector('#bi-body').addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         const header = e.target.closest('.bi-card-header');
@@ -376,24 +383,76 @@
     const panel    = getOrCreatePanel();
     const body     = panel.querySelector('#bi-body');
     const profiles = orderedProfiles();
-
-    // Remember the single currently open card
-    const openUid = body.querySelector('.bi-card--open')?.dataset.uid ?? null;
+    const openUid  = body.querySelector('.bi-card--open')?.dataset.uid ?? null;
 
     body.innerHTML = buildPanelHTML(profiles);
 
-    // Re-open at most one card: the previously open one, or the first card
     const toOpen = openUid
       ? (body.querySelector(`.bi-card[data-uid="${openUid}"]`) ?? body.querySelector('.bi-card'))
       : body.querySelector('.bi-card');
+    if (toOpen) _openCard(toOpen);
+  }
 
-    if (toOpen) {
-      toOpen.classList.add('bi-card--open');
-      const cardBody = toOpen.querySelector('.bi-card-body');
-      const hdr      = toOpen.querySelector('.bi-card-header');
-      if (cardBody) cardBody.hidden = false;
-      if (hdr)      hdr.setAttribute('aria-expanded', 'true');
+  // ── Position persistence ──────────────────────────────────────────────────
+  function _savePosition(el) {
+    if (el.style.left) localStorage.setItem(STORAGE_POS_LEFT, el.style.left);
+    if (el.style.top)  localStorage.setItem(STORAGE_POS_TOP,  el.style.top);
+  }
+
+  function _restorePosition(el) {
+    const left = localStorage.getItem(STORAGE_POS_LEFT);
+    const top  = localStorage.getItem(STORAGE_POS_TOP);
+    if (left && top) {
+      el.style.left  = left;
+      el.style.top   = top;
+      el.style.right = 'auto';
     }
+  }
+
+  // ── Size persistence ──────────────────────────────────────────────────────
+  function _saveSize(el) {
+    localStorage.setItem(STORAGE_WIDTH,  el.style.width);
+    localStorage.setItem(STORAGE_HEIGHT, el.style.height);
+  }
+
+  function _restoreSize(el) {
+    const w = localStorage.getItem(STORAGE_WIDTH);
+    const h = localStorage.getItem(STORAGE_HEIGHT);
+    if (w) el.style.width  = w;
+    if (h) el.style.height = h;
+  }
+
+  // ── Body height sync ──────────────────────────────────────────────────────
+  function _syncBodyHeight(el) {
+    const header = el.querySelector('.bi-header');
+    const footer = el.querySelector('.bi-footer');
+    const body   = el.querySelector('#bi-body');
+    if (!header || !footer || !body) return;
+    const available = el.clientHeight - header.offsetHeight - footer.offsetHeight;
+    body.style.maxHeight = Math.max(60, available) + 'px';
+  }
+
+  // ── Resize ────────────────────────────────────────────────────────────────
+  function _makeResizable(el, grip) {
+    grip.addEventListener('mousedown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX, startY = e.clientY;
+      const startW = el.offsetWidth, startH = el.offsetHeight;
+
+      const onMove = ev => {
+        el.style.width  = Math.min(PANEL_MAX_WIDTH,  Math.max(PANEL_MIN_WIDTH,  startW + ev.clientX - startX)) + 'px';
+        el.style.height = Math.min(window.innerHeight - 20, Math.max(PANEL_MIN_HEIGHT, startH + ev.clientY - startY)) + 'px';
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        _saveSize(el);
+        _syncBodyHeight(el);
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp, { once: true });
+    });
   }
 
   // ── Drag ──────────────────────────────────────────────────────────────────
@@ -415,6 +474,7 @@
       const onUp = () => {
         handle.style.cursor = 'grab';
         document.removeEventListener('mousemove', onMove);
+        _savePosition(el);
       };
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp, { once: true });
@@ -437,26 +497,36 @@
     }
   });
 
-  // ── Version check ─────────────────────────────────────────────────────────
+  // ── Version / icon update ─────────────────────────────────────────────────
   // version-check.js runs in ISOLATED world (has chrome.runtime + bypasses CSP)
-  // and posts {type:'__beespy_version__', local, remote} when the fetch resolves.
+  // and posts { type, local, remote, iconUrl } once the fetch resolves.
   window.addEventListener('message', e => {
     if (e.source !== window || e.data?.type !== '__beespy_version__') return;
-    const { local, remote } = e.data;
-    console.log('[BeeSpy] version message received: local =', local, ', remote =', remote);
+    const { local, remote, iconUrl } = e.data;
+    _log('version received: local =', local, 'remote =', remote);
+
+    if (iconUrl) {
+      const placeholder = document.getElementById('bi-logo-icon');
+      if (placeholder) {
+        const img = Object.assign(document.createElement('img'), {
+          className: 'bi-ext-icon', src: iconUrl, width: 18, height: 18, alt: '',
+        });
+        placeholder.replaceWith(img);
+      }
+    }
+
     if (remote && _isNewerVersion(remote, local)) {
-      console.log('[BeeSpy] update available:', local, '→', remote);
+      _log('update available:', local, '→', remote);
       const badge = document.getElementById('bi-update-badge');
       if (badge) {
         badge.hidden      = false;
         badge.title       = `Update available: v${local} → v${remote}`;
         badge.textContent = `↑ v${remote}`;
-        console.log('[BeeSpy] badge shown');
       } else {
-        console.warn('[BeeSpy] #bi-update-badge not found in DOM');
+        _warn('#bi-update-badge not found in DOM');
       }
     } else if (remote) {
-      console.log('[BeeSpy] up to date');
+      _log('up to date');
     }
   });
 
@@ -475,7 +545,7 @@
       _observer.observe(document.body, { childList: true, subtree: true });
       window.__beeSpy = { store, order, orderedProfiles };
       getOrCreatePanel();
-      console.debug('[BeeSpy] Ready ✓');
+      _log('Ready ✓');
     } else {
       document.addEventListener('DOMContentLoaded', _start, { once: true });
     }

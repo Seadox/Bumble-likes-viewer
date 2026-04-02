@@ -58,7 +58,17 @@
   top: 72px;
   right: 18px;
   width: 296px;
+  height: 480px;               /* default; overridden by JS from localStorage  */
+  max-height: calc(100vh - 80px); /* never overflow a small viewport            */
+  min-width: 220px;
+  max-width: 560px;
+  min-height: 160px;
   z-index: 2147483647;
+
+  /* Flex column: header + body(scroll) + footer stack vertically          */
+  display: flex;
+  flex-direction: column;
+
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--text);
   border-radius: 18px;
@@ -71,8 +81,14 @@
   transition: box-shadow 0.2s;
 }
 
+/* Collapsed: shrink to header height only */
+#bi-panel.bi--collapsed {
+  height: auto !important;
+}
+
 /* ── Header ──────────────────────────────────────────────────────────────── */
 .bi-header {
+  flex-shrink: 0;   /* never let header compress — body owns all spare space */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -92,9 +108,9 @@
   color: var(--text);
 }
 
-.bi-logo svg {
-  width: 1.35em;
-  height: 1.35em;
+.bi-logo-svg {
+  width: 18px;
+  height: 18px;
   color: var(--accent);
   flex-shrink: 0;
 }
@@ -165,25 +181,53 @@
 #bi-panel[data-theme="light"] .bi-icon-moon { display: none; }
 #bi-panel[data-theme="dark"]  .bi-icon-sun  { display: none; }
 
-/* Collapsed */
+/* Collapsed: hide body, footer, and resize grip */
 #bi-panel.bi--collapsed .bi-body,
-#bi-panel.bi--collapsed .bi-footer { display: none; }
+#bi-panel.bi--collapsed .bi-footer,
+#bi-panel.bi--collapsed .bi-resize-grip { display: none; }
 
 /* ── Body ────────────────────────────────────────────────────────────────── */
 .bi-body {
+  flex: 1;          /* fills all space between header and footer            */
+  min-height: 0;    /* lets flex compress below content size (critical!)    */
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 0.65em 0.65em 0.3em;
   display: flex;
   flex-direction: column;
-  /* gap scales with font size — fixes spacing bug when A+/A− is pressed */
   gap: 0.7em;
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
   background: var(--bg-body);
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: rgba(128,128,128,0.45) transparent;
 }
-.bi-body::-webkit-scrollbar { width: 3px; }
-.bi-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.bi-body::-webkit-scrollbar       { width: 5px; }
+.bi-body::-webkit-scrollbar-track { background: transparent; }
+.bi-body::-webkit-scrollbar-thumb {
+  background: rgba(128,128,128,0.45);
+  border-radius: 3px;
+}
+.bi-body::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.7); }
+
+/* ── Resize grip ─────────────────────────────────────────────────────────── */
+.bi-resize-grip {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  z-index: 1;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+  /* Classic diagonal-lines grip via repeating-linear-gradient */
+  background:
+    linear-gradient(135deg,
+      transparent 30%, var(--text-3) 30%, var(--text-3) 40%, transparent 40%,
+      transparent 63%, var(--text-3) 63%, var(--text-3) 73%, transparent 73%,
+      transparent 86%, var(--text-3) 86%, var(--text-3) 96%, transparent 96%
+    );
+}
+.bi-resize-grip:hover { opacity: 0.75; }
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
 .bi-card {
@@ -380,6 +424,7 @@
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .bi-footer {
+  flex-shrink: 0;   /* mirror of header — never compress */
   display: flex;
   align-items: center;
   justify-content: center;

@@ -47,19 +47,23 @@
   // ── State ─────────────────────────────────────────────────────────────────
   const store = new Map();
   const order = [];
-  let theme    = localStorage.getItem(STORAGE_THEME) || 'light';
-  let fontSize = Math.min(FONT_MAX, Math.max(FONT_MIN,
-                   Number(localStorage.getItem(STORAGE_FONT)) || FONT_DEFAULT));
+  let theme          = localStorage.getItem(STORAGE_THEME) || 'light';
+  let fontSize       = Math.min(FONT_MAX, Math.max(FONT_MIN,
+                         Number(localStorage.getItem(STORAGE_FONT)) || FONT_DEFAULT));
+  let quotaRemaining = null;   // real server-side likes remaining
+  let quotaMax       = null;   // highest quota seen = daily total
 
   // ── JSON.parse patch — modify responses before the app reads them ─────────
   const _origParse = JSON.parse;
   JSON.parse = function (text, ...args) {
     const r = _origParse.call(this, text, ...args);
     const body0 = r?.body?.[0];
-    // Spoof vote quota so the like-limit blocker never fires
+    // Capture real quota before spoofing, then spoof so the blocker never fires
     const quota = r?.body?.[0]?.client_encounters?.quota;
-    if (quota && typeof quota.yes_votes_quota === 'number' && quota.yes_votes_quota < 500) {
-      quota.yes_votes_quota = 500;
+    if (quota && typeof quota.yes_votes_quota === 'number') {
+      quotaRemaining = quota.yes_votes_quota;
+      if (quotaMax === null || quotaRemaining > quotaMax) quotaMax = quotaRemaining;
+      if (quota.yes_votes_quota < 500) quota.yes_votes_quota = 500;
     }
     // Enable backtrack (100) and premium (295) in every feature array across all body elements.
     // Startup response stores features in client_startup.app_feature[] and
@@ -115,6 +119,7 @@
       if (!v?.person_id) return;
       const p = store.get(v.person_id);
       if (p) p.myVote = v.vote;
+      if (v.vote === 2 && quotaRemaining !== null && quotaRemaining > 0) quotaRemaining--;
       const idx = order.indexOf(v.person_id);
       if (idx !== -1) order.splice(idx, 1);
       renderPanel();
@@ -334,6 +339,7 @@
           </button>
         </div>
       </header>
+      <div class="bi-quota-bar" id="bi-quota-bar" hidden></div>
       <div class="bi-body" id="bi-body"></div>
       <footer class="bi-footer" id="bi-footer">
         <span class="bi-credit">Created by Seadox</span>
@@ -428,6 +434,17 @@
       ? (body.querySelector(`.bi-card[data-uid="${openUid}"]`) ?? body.querySelector('.bi-card'))
       : body.querySelector('.bi-card');
     if (toOpen) _openCard(toOpen);
+
+    // Update quota bar
+    const quotaBar = panel.querySelector('#bi-quota-bar');
+    if (quotaBar) {
+      if (quotaRemaining !== null && quotaMax !== null) {
+        quotaBar.textContent = `${quotaRemaining} / ${quotaMax} likes`;
+        quotaBar.hidden = false;
+      } else {
+        quotaBar.hidden = true;
+      }
+    }
   }
 
   // ── Position persistence ──────────────────────────────────────────────────

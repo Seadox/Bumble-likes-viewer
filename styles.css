@@ -181,8 +181,9 @@
 #bi-panel[data-theme="light"] .bi-icon-moon { display: none; }
 #bi-panel[data-theme="dark"]  .bi-icon-sun  { display: none; }
 
-/* Collapsed: hide body, footer, and resize grip */
+/* Collapsed: hide body, quota bar, footer, and resize grip */
 #bi-panel.bi--collapsed .bi-body,
+#bi-panel.bi--collapsed .bi-quota-bar,
 #bi-panel.bi--collapsed .bi-footer,
 #bi-panel.bi--collapsed .bi-resize-grip { display: none; }
 
@@ -231,6 +232,7 @@
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
 .bi-card {
+  flex-shrink: 0;   /* prevent cards from compressing to fit — let body scroll */
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -421,6 +423,20 @@
   border-top: 1px solid var(--border);
   font-style: italic;
 }
+
+/* ── Quota bar ───────────────────────────────────────────────────────────── */
+.bi-quota-bar {
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 0.78em;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.03em;
+  padding: 5px 13px 4px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+}
+.bi-quota-bar[hidden] { display: none; }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .bi-footer {

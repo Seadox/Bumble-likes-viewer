@@ -41,8 +41,22 @@ Every profile loaded into your swipe queue is displayed in a live stack — not 
 | **About me** | Their bio text |
 | **Open-ended answers** | Any question prompts they've answered |
 | **Photo count** | Number of photos on their profile |
+| **Distance** | How far away they are (pre-formatted by the server) |
 
 Profiles are removed from the stack the instant you swipe, keeping the queue perfectly in sync.
+
+---
+
+## Unlocked Features
+
+BeeSpy silently patches Bumble's response data to remove several paywalls:
+
+| Feature | What it does |
+|---|---|
+| **Backtrack / undo** | Re-enables the undo-last-swipe button (normally a Premium feature) |
+| **Premium flag** | Enables the Premium feature flag so Premium-gated UI is accessible |
+
+These patches are applied locally via a `JSON.parse` intercept — no requests are modified on the wire.
 
 ---
 

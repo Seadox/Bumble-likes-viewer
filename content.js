@@ -124,8 +124,9 @@
   function _interceptIncoming(res) {
     const results = res?.body?.[0]?.client_encounters?.results;
     if (!Array.isArray(results)) return;
-    store.clear();
-    order.length = 0;
+    // Do NOT clear — only add profiles not already in queue.
+    // Clearing would wipe profiles the user hasn't swiped yet.
+    // _parseResult deduplicates via order.includes() check.
     results.forEach(_parseResult);
     if (order.length > 0) renderPanel();
   }

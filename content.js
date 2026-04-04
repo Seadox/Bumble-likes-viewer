@@ -20,8 +20,8 @@
 (function () {
   'use strict';
 
-  // Only activate on regional subdomains e.g. fr1.bumble.com, not www.bumble.com
-  if (!/^[^.]+\.bumble\.com$/.test(window.location.hostname)) return;
+  // Only activate on bumble.com domains (with or without subdomain)
+  if (!/(?:^|\.)bumble\.com$/.test(window.location.hostname)) return;
 
   // ── Config ────────────────────────────────────────────────────────────────
   const PANEL_ID         = 'bi-panel';

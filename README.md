@@ -18,6 +18,10 @@ A lightweight Chrome extension that surfaces real-time profile data directly fro
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Made by Seadox](https://img.shields.io/badge/made%20by-Seadox-ff6500)](https://github.com/seadox)
 
+[![GitHub release](https://img.shields.io/github/v/release/Seadox/BeeSpy?color=brightgreen&logo=github)](https://github.com/Seadox/BeeSpy/releases/latest)
+[![Release date](https://img.shields.io/github/release-date/Seadox/BeeSpy?color=blue)](https://github.com/Seadox/BeeSpy/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Seadox/BeeSpy/total?color=orange)](https://github.com/Seadox/BeeSpy/releases)
+
 </div>
 
 ---

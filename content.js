@@ -51,6 +51,40 @@
   let fontSize = Math.min(FONT_MAX, Math.max(FONT_MIN,
                    Number(localStorage.getItem(STORAGE_FONT)) || FONT_DEFAULT));
 
+  // ── JSON.parse patch — modify responses before the app reads them ─────────
+  const _origParse = JSON.parse;
+  JSON.parse = function (text, ...args) {
+    const r = _origParse.call(this, text, ...args);
+    const body0 = r?.body?.[0];
+    // Spoof vote quota so the like-limit blocker never fires
+    const quota = r?.body?.[0]?.client_encounters?.quota;
+    if (quota && typeof quota.yes_votes_quota === 'number' && quota.yes_votes_quota < 500) {
+      quota.yes_votes_quota = 500;
+    }
+    // Enable backtrack (100) and premium (295) in every feature array across all body elements.
+    // Startup response stores features in client_startup.app_feature[] and
+    // client_common_settings.application_features[], both using the key `feature` (not `id`).
+    const TARGET_FEATURES = new Set([100, 295]);
+    if (Array.isArray(r?.body)) {
+      r.body.forEach(b => {
+        [
+          b?.client_startup?.app_feature,
+          b?.client_common_settings?.application_features,
+          b?.features,
+        ].forEach(arr => {
+          if (!Array.isArray(arr)) return;
+          arr.forEach(f => {
+            if (TARGET_FEATURES.has(f?.feature) || TARGET_FEATURES.has(f?.id)) {
+              f.enabled = true;
+              f.required_action = 0;
+            }
+          });
+        });
+      });
+    }
+    return r;
+  };
+
   // ── XHR intercept ─────────────────────────────────────────────────────────
   const _xhrOpen = XMLHttpRequest.prototype.open;
   const _xhrSend = XMLHttpRequest.prototype.send;
@@ -139,6 +173,7 @@
       starSign:    f['lifestyle_star_sign']         || '',
       politics:    f['lifestyle_politics']          || '',
       education:   f['lifestyle_education_level']   || '',
+      distance:    u.distance_long                  || '',
       extras,
     });
 
@@ -216,6 +251,7 @@
         ${row('⭐', 'Star sign',   p.starSign)}
         ${row('🗳️', 'Politics',   p.politics)}
         ${row('🎓', 'Education',   p.education)}
+        ${row('📍', 'Distance',    p.distance)}
         ${p.extras.map(e => row('💬', e.q, e.a)).join('')}
       </div>
       ${p.about ? `<p class="bi-about">${esc(p.about)}</p>` : ''}
